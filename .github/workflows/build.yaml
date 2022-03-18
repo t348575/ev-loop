@@ -15,7 +15,7 @@ jobs:
       - name: Install cmakes
         uses: lukka/get-cmake@latest
       - name: Install boost
-        run: apt-get install libboost-all-dev
+        run: sudo apt-get install libboost-all-dev -y
       - name: Build
         run: cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_C_COMPILER:FILEPATH=${{ steps.install_cc.outputs.cc }} -DCMAKE_CXX_COMPILER:FILEPATH=${{ steps.install_cc.outputs.cxx }} -H./ -B./build -G "Unix Makefiles"
         shell: bash
