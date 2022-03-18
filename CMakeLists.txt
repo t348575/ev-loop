@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5.1)
 
 project(EvLoop CXX)
 
-add_executable(Test test_ev_loop.cc)
+add_executable(Test test_ev_loop.cpp)
 
 add_subdirectory(ev_loop)
 

@@ -12,13 +12,14 @@
 
 namespace ev {
     typedef uint32_t u32;
+    typedef uint64_t u64;
 
     class Store {
         public:
             Store() = default;
-            void Set(std::string key, boost::any value);
-            void Remove(std::string key);
-            boost::any Get(std::string key);
+            void Set(u64, boost::any value);
+            void Remove(u64 key);
+            boost::any Get(u64 key);
 
             template<typename Func>
             auto DoLocked(Func func) -> decltype(func(*this)) {
@@ -27,7 +28,7 @@ namespace ev {
             }
         private:
             std::unique_ptr<std::recursive_mutex> mtx = std::make_unique<std::recursive_mutex>();
-            std::unordered_map<std::string, boost::any> store;
+            std::unordered_map<u64, boost::any> store;
     };
 
     typedef boost::optional<Store> OptionalStore;
@@ -84,9 +85,8 @@ namespace ev {
         public:
             EvLoop(u32 num_workers);
             void Enqueue(Job j);
-            void Enqueue(ReoccuringJob j);
-            void StopReccuring(u32 id);
-            // void StopImmediate(u32 id);
+            u32 Enqueue(ReoccuringJob j);
+            std::size_t StopReccuring(u32 id);
             void Modify(u32 id, std::chrono::milliseconds i);
             void Run();
         private:

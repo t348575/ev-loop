@@ -1,14 +1,14 @@
 #include <iostream>
 #include <thread>
-#include "ev_loop/ev_loop.h"
+#include "ev_loop/ev_loop.hpp"
 
 int main() {
-    ev::EvLoop my_event_loop(8);
+    ev::EvLoop my_event_loop(8); // event loop with 8 workers
 
     // my_event_loop.enqueue("Hello, world!");
     auto data_store = std::make_shared<boost::optional<ev::Store>>(ev::Store());
     for (int i = 0; i < 100; i++) {
-        data_store->get().Set(std::to_string(i), boost::any(i + 1));
+        data_store->get().Set(i, boost::any(i + 1));
     }
 
     // for(int i = 0; i < 10; i++) {

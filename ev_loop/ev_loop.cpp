@@ -1,6 +1,5 @@
-#include "ev_loop.h"
+#include "ev_loop.hpp"
 #include <thread>
-#include <vector>
 #include <iostream>
 
 using namespace ev;
@@ -11,12 +10,18 @@ auto since(std::chrono::time_point<clock_t, duration_t> const& start) {
 }
 
 auto constexpr range_limit = std::chrono::microseconds(100);
+auto constexpr precision = std::chrono::microseconds(950);
+
 bool within(std::chrono::microseconds time_since, std::chrono::microseconds interval) {
     return time_since >= interval - range_limit;
 }
 
 EvLoop::EvLoop(u32 num_workers): size(num_workers) {
-    id_counter.store(0);
+    if (num_workers == 0) {
+        throw std::runtime_error("EvLoop: num_workers must be greater than 0");
+    }
+
+    id_counter.store(1);
     for (u32 i = 0; i < num_workers; i++) {
         Worker w(std::make_shared<Worker::SharedData>(i));
         workers[i] = w.shared;
@@ -30,21 +35,25 @@ void EvLoop::Enqueue(Job j) {
     internal_q.push(j);
 }
 
-void EvLoop::Enqueue(ReoccuringJob j) {
+u32 EvLoop::Enqueue(ReoccuringJob j) {
     auto id = id_counter.fetch_add(1);
     j.last_call = clock.now();
     reoccuring_jobs[id] = j;
+    return id;
+}
+
+std::size_t EvLoop::StopReccuring(u32 id) {
+    return reoccuring_jobs.erase(id);
+}
+
+void EvLoop::Modify(u32 id, std::chrono::milliseconds i) {
+    reoccuring_jobs[id].interval = std::chrono::duration_cast<std::chrono::microseconds>(i);
+    reoccuring_jobs[id].last_call = clock.now();
 }
 
 void EvLoop::Run() {
     auto elapsed = since(start);
-    while(true) {
-        auto time_left = since(start);
-        if (time_left < std::chrono::microseconds(950)) {
-            std::this_thread::sleep_for(std::chrono::microseconds(950) - time_left);
-        }
-
-        {
+    while(true) {{
             std::lock_guard<std::mutex> lk(internal_mtx);
             for (auto &job: reoccuring_jobs) {
                 if (within(since(job.second.last_call), job.second.interval)) {
@@ -55,6 +64,11 @@ void EvLoop::Run() {
         }
 
         internal_q.consume_one([&](Job j) {
+            auto time_left = since(start);
+            if (time_left < precision) {
+                std::this_thread::sleep_for(precision - time_left);
+            }
+
             std::lock_guard<std::mutex> lk(internal_mtx);
             u32 smallest = workers[0]->queue_size;
             u32 smallest_idx = 0;
@@ -74,17 +88,17 @@ void EvLoop::Run() {
     }
 }
 
-void Store::Set(std::string key, boost::any value) {
+void Store::Set(u64 key, boost::any value) {
     std::lock_guard<std::recursive_mutex> lock(*mtx);
     store[key] = value;
 }
 
-void Store::Remove(std::string key) {
+void Store::Remove(u64 key) {
     std::lock_guard<std::recursive_mutex> lock(*mtx);
     store.erase(key);
 }
 
-boost::any Store::Get(std::string key) {
+boost::any Store::Get(u64 key) {
     std::lock_guard<std::recursive_mutex> lock(*mtx);
     return store[key];
 }

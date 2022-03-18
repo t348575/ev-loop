@@ -1,3 +1,5 @@
 .vscode
 build
 temp_cmake.cmake
+.VSCodeCounter
+common.cmake
