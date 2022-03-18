@@ -9,7 +9,7 @@ jobs:
       - name: Checkout this commit
         uses: actions/checkout@v2
       - name: Install compiler
-        uses: rlalik/setup-cpp-compiler@v1
+        uses: rlalik/setup-cpp-compiler@v1.1
         with:
           compiler: gcc-latest
       - name: Install cmakes
