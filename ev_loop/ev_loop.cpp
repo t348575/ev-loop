@@ -16,7 +16,7 @@ bool within(std::chrono::microseconds time_since, std::chrono::microseconds inte
     return time_since >= interval - range_limit;
 }
 
-EvLoop::EvLoop(u32 num_workers): size(num_workers) {
+EvLoop::EvLoop(u32 num_workers = std::thread::hardware_concurrency()): size(num_workers) {
     if (num_workers == 0) {
         throw std::runtime_error("EvLoop: num_workers must be greater than 0");
     }

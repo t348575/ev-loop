@@ -41,8 +41,8 @@ namespace ev {
             Job() = default;
             Job(u32 id) : id(id) {}
             Job(JobSig func): func(func) {}
-            void SetIn(std::shared_ptr<OptionalStore> in_) { in = in_; }
-            std::shared_ptr<OptionalStore> GetIn() { return in; }
+            void SetStore(std::shared_ptr<OptionalStore> store_) { store = store_; }
+            std::shared_ptr<OptionalStore> GetStore() { return store; }
             void operator()() {
                 func(this);
             }
@@ -52,8 +52,7 @@ namespace ev {
         private:
             u32 id = 0;
             JobSig func;
-            std::shared_ptr<OptionalStore> in;
-            std::shared_ptr<OptionalStore> out;
+            std::shared_ptr<OptionalStore> store;
     };
 
     typedef boost::lockfree::spsc_queue<Job, boost::lockfree::capacity<128>> WorkQ;
