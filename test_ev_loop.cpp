@@ -31,5 +31,8 @@ int main() {
     for (int i = 0; i < 10; i++) {
         std::cout << "Sum result of worker " << i << " is " << boost::any_cast<int>(data_store->get().Get(i + 1)) << std::endl;
     }
+
+    // stop the event loop
+    my_event_loop.Stop();
     return 0;
 }

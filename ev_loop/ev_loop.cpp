@@ -32,7 +32,7 @@ EvLoop::EvLoop(u32 num_workers = std::thread::hardware_concurrency()): size(num_
 }
 
 void EvLoop::Enqueue(Job j) {
-    internal_q.push(j);
+    internal_q.push(QOptions{Type::INSTANT, j});
 }
 
 u32 EvLoop::Enqueue(ReoccuringJob j) {
@@ -51,19 +51,34 @@ void EvLoop::Modify(u32 id, std::chrono::milliseconds i) {
     reoccuring_jobs[id].last_call = clock.now();
 }
 
+void EvLoop::Stop() {
+    internal_q.push(QOptions{Type::STOP, Job()});
+}
+
 void EvLoop::Run() {
     auto elapsed = since(start);
-    while(true) {{
+    bool exit = false;
+    while(!exit) {{
             std::lock_guard<std::mutex> lk(internal_mtx);
             for (auto &job: reoccuring_jobs) {
                 if (within(since(job.second.last_call), job.second.interval)) {
-                    internal_q.push(job.second.j);
+                    internal_q.push(QOptions{Type::REOCCURING, job.second.j});
                     job.second.last_call = clock.now();
                 }
             }
         }
 
-        internal_q.consume_one([&](Job j) {
+        internal_q.consume_one([&](QOptions item) {
+            if (item.type == Type::STOP) {
+                exit = true;
+                for (u32 i = 0; i < size; i++) {
+                    workers[i]->queue.push(item);
+                    workers[i]->cv.notify_one();
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                return;
+            }
+
             auto time_left = since(start);
             if (time_left < precision) {
                 std::this_thread::sleep_for(precision - time_left);
@@ -74,13 +89,16 @@ void EvLoop::Run() {
             u32 smallest_idx = 0;
             for (u32 i = 1; i < size; i++) {
                 if (workers[i]->queue_size <= smallest) {
+                    if (since(workers[i]->curr_start) > precision) {
+                        continue;
+                    }
                     smallest = workers[i]->queue_size;
                     smallest_idx = i;
                 }
             }
 
             workers[smallest_idx]->queue_size++;
-            workers[smallest_idx]->queue.push(j);
+            workers[smallest_idx]->queue.push(item);
             workers[smallest_idx]->cv.notify_one();
         });
 
@@ -105,11 +123,17 @@ boost::any Store::Get(u64 key) {
 
 void Worker::Run() {
     std::mutex mtx;
-    while (true) {
+    bool exit = false;
+    while (!exit) {
         std::unique_lock<std::mutex> lock(mtx);
         shared->cv.wait(lock, [this]{return !shared->queue.empty();});
-        shared->queue.consume_one([&](Job j) {
-            j();
+        shared->queue.consume_one([&](QOptions item) {
+            if (item.type == Type::STOP) {
+                exit = true;
+                return;
+            }
+            shared->curr_start = shared->clock.now();
+            item.j();
             shared->queue_size--;
         });
         lock.unlock();

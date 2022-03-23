@@ -36,18 +36,20 @@ namespace ev {
     class Job;
     typedef std::function<void(Job*)> JobSig;
 
+    enum Type {
+        INSTANT,
+        REOCCURING,
+        STOP
+    };
+
     class Job {
         public:
             Job() = default;
-            Job(u32 id) : id(id) {}
             Job(JobSig func): func(func) {}
             void SetStore(std::shared_ptr<OptionalStore> store_) { store = store_; }
             std::shared_ptr<OptionalStore> GetStore() { return store; }
             void operator()() {
                 func(this);
-            }
-            static Job EmptyJob(u32 id) {
-                return Job(id);
             }
         private:
             u32 id = 0;
@@ -55,7 +57,12 @@ namespace ev {
             std::shared_ptr<OptionalStore> store;
     };
 
-    typedef boost::lockfree::spsc_queue<Job, boost::lockfree::capacity<128>> WorkQ;
+    struct QOptions {
+        Type type;
+        Job j;
+    };
+
+    typedef boost::lockfree::spsc_queue<QOptions, boost::lockfree::capacity<128>> WorkQ;
 
     struct Worker {
         struct SharedData {
@@ -63,6 +70,8 @@ namespace ev {
             u32 queue_size;
             WorkQ queue;
             std::condition_variable cv;
+            std::chrono::steady_clock::time_point curr_start;
+            std::chrono::steady_clock clock = std::chrono::steady_clock();
             SharedData(u32 id): id(id) { queue_size = 0; }
         };
         std::shared_ptr<SharedData> shared;
@@ -88,19 +97,13 @@ namespace ev {
             std::size_t StopReccuring(u32 id);
             void Modify(u32 id, std::chrono::milliseconds i);
             void Run();
+            void Stop();
         private:
-            struct QOptions {
-                enum type {
-                    INSTANT,
-                    REOCCURING
-                } type_;
-                Job j;
-            };
             u32 size;
             std::atomic_uint32_t id_counter;
             std::mutex internal_mtx;
             std::unordered_map<u32, std::shared_ptr<Worker::SharedData>> workers;
-            boost::lockfree::spsc_queue<Job, boost::lockfree::capacity<512>> internal_q;
+            boost::lockfree::spsc_queue<QOptions, boost::lockfree::capacity<512>> internal_q;
             std::unordered_map<u32, ReoccuringJob> reoccuring_jobs;
             std::chrono::steady_clock clock = std::chrono::steady_clock();
             std::chrono::steady_clock::time_point start;
