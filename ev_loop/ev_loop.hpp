@@ -14,6 +14,11 @@ namespace ev {
     typedef uint32_t u32;
     typedef uint64_t u64;
 
+    template<typename T, typename ...Args>
+    std::unique_ptr<T> make_unique(Args&& ...args) {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+
     class Store {
         public:
             Store() = default;
@@ -27,7 +32,7 @@ namespace ev {
                 return func(*this);
             }
         private:
-            std::unique_ptr<std::recursive_mutex> mtx = std::make_unique<std::recursive_mutex>();
+            std::unique_ptr<std::recursive_mutex> mtx = make_unique<std::recursive_mutex>();
             std::unordered_map<u64, boost::any> store;
     };
 
