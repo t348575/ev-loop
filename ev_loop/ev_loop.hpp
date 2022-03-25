@@ -29,7 +29,7 @@ namespace ev {
             std::lock_guard<std::recursive_mutex> lock(*mtx);
             return func(*this);
         }
-        std::unique_ptr<std::recursive_mutex> mtx = std::make_unique<std::recursive_mutex>();
+        std::unique_ptr<std::recursive_mutex> mtx = make_unique<std::recursive_mutex>();
         std::unordered_map<u64, boost::any> store;
     };
 
