@@ -23,9 +23,15 @@ int main() {
 
     // run task every 1.5 seconds
     ev::Job j_reoccuring([](ev::Job *self) { std::cout << "Every 1.5 seconds!" << std::endl; });
-    my_event_loop.Enqueue(ev::ReoccuringJob(j_reoccuring, std::chrono::milliseconds(1500)));
+    auto id = my_event_loop.Enqueue(ev::ReoccuringJob(j_reoccuring, std::chrono::milliseconds(1500)));
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::thread([&my_event_loop, &id]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+        my_event_loop.StopReccuring(id);
+    }).detach();
+
+    my_event_loop.BlockOn(id, std::chrono::milliseconds(1500));
+
 
     for (int i = 0; i < 10; i++) {
         std::cout << "Sum result of worker " << i << " is " << boost::any_cast<int>(data_store->Get(i + 1)) << std::endl;

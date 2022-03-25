@@ -94,6 +94,7 @@ namespace ev {
             EvLoop(u32 num_workers);
             void Enqueue(Job j);
             u32 Enqueue(ReoccuringJob j);
+            void BlockOn(u32 , std::chrono::milliseconds i);
             std::size_t StopReccuring(u32 id);
             void Modify(u32 id, std::chrono::milliseconds i);
             void Run();
