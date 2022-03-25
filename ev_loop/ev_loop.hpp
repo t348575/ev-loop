@@ -13,6 +13,11 @@ namespace ev {
     typedef uint32_t u32;
     typedef uint64_t u64;
 
+    template<typename T, typename ...Args>
+    std::unique_ptr<T> make_unique(Args&& ...args) {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+
     struct Store {
         Store() = default;
         void Set(u64, boost::any value);
