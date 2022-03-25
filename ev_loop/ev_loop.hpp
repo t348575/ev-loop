@@ -5,7 +5,6 @@
 #include <condition_variable>
 #include <memory>
 #include <boost/any.hpp>
-#include <boost/optional.hpp>
 #include <unordered_map>
 #include <boost/lockfree/spsc_queue.hpp>
 #include <chrono>
@@ -14,24 +13,20 @@ namespace ev {
     typedef uint32_t u32;
     typedef uint64_t u64;
 
-    class Store {
-        public:
-            Store() = default;
-            void Set(u64, boost::any value);
-            void Remove(u64 key);
-            boost::any Get(u64 key);
+    struct Store {
+        Store() = default;
+        void Set(u64, boost::any value);
+        void Remove(u64 key);
+        boost::any Get(u64 key);
 
-            template<typename Func>
-            auto DoLocked(Func func) -> decltype(func(*this)) {
-                std::lock_guard<std::recursive_mutex> lock(*mtx);
-                return func(*this);
-            }
-        private:
-            std::unique_ptr<std::recursive_mutex> mtx = std::make_unique<std::recursive_mutex>();
-            std::unordered_map<u64, boost::any> store;
+        template<typename Func>
+        auto DoLocked(Func func) -> decltype(func(*this)) {
+            std::lock_guard<std::recursive_mutex> lock(*mtx);
+            return func(*this);
+        }
+        std::unique_ptr<std::recursive_mutex> mtx = std::make_unique<std::recursive_mutex>();
+        std::unordered_map<u64, boost::any> store;
     };
-
-    typedef boost::optional<Store> OptionalStore;
 
     class Job;
     typedef std::function<void(Job*)> JobSig;
@@ -46,15 +41,15 @@ namespace ev {
         public:
             Job() = default;
             Job(JobSig func): func(func) {}
-            void SetStore(std::shared_ptr<OptionalStore> store_) { store = store_; }
-            std::shared_ptr<OptionalStore> GetStore() { return store; }
+            void SetStore(Store *store_) { store = store_; }
+            Store* GetStore() { return store; }
             void operator()() {
                 func(this);
             }
         private:
             u32 id = 0;
             JobSig func;
-            std::shared_ptr<OptionalStore> store;
+            Store *store;
     };
 
     struct QOptions {
