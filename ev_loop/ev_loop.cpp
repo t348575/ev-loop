@@ -42,9 +42,13 @@ u32 EvLoop::Enqueue(ReoccuringJob j) {
     return id;
 }
 
-void EvLoop::BlockOn(u32 id, std::chrono::milliseconds i) {
+void EvLoop::BlockOn(StatusLambda j, u32 id, std::chrono::milliseconds i) {
     while(true) {
         if (reoccuring_jobs.find(id) == reoccuring_jobs.end()) {
+            return;
+        }
+        if (j(this)) {
+            this->StopReccuring(id);
             return;
         }
         std::this_thread::sleep_for(i);
