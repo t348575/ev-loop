@@ -47,7 +47,7 @@ void EvLoop::BlockOn(StatusLambda j, u32 id, std::chrono::milliseconds i) {
         if (reoccuring_jobs.find(id) == reoccuring_jobs.end()) {
             return;
         }
-        if (j(this)) {
+        if (j()) {
             this->StopReccuring(id);
             return;
         }

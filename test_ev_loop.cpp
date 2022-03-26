@@ -30,7 +30,7 @@ int main() {
         my_event_loop.StopReccuring(id);
     }).detach();
 
-    my_event_loop.BlockOn(id, std::chrono::milliseconds(1500));
+    my_event_loop.BlockOn([]() { return false; }, id, std::chrono::milliseconds(1500));
 
 
     for (int i = 0; i < 10; i++) {

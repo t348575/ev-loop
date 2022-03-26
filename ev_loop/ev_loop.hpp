@@ -90,7 +90,7 @@ namespace ev {
     };
 
     class EvLoop;
-    typedef std::function<bool(EvLoop*)> StatusLambda;
+    typedef std::function<bool(void)> StatusLambda;
 
     class EvLoop {
         public:
