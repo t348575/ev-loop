@@ -105,7 +105,7 @@ namespace ev {
         private:
             u32 size;
             std::atomic_uint32_t id_counter;
-            std::mutex internal_mtx;
+            mutable std::mutex internal_mtx;
             std::unordered_map<u32, std::shared_ptr<Worker::SharedData>> workers;
             boost::lockfree::spsc_queue<QOptions, boost::lockfree::capacity<512>> internal_q;
             std::unordered_map<u32, ReoccuringJob> reoccuring_jobs;

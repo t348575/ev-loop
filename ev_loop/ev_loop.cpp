@@ -32,10 +32,12 @@ EvLoop::EvLoop(u32 num_workers = std::thread::hardware_concurrency()): size(num_
 }
 
 void EvLoop::Enqueue(Job j) {
+    std::lock_guard<std::mutex> lock(internal_mtx);
     internal_q.push(QOptions{Type::INSTANT, j});
 }
 
 u32 EvLoop::Enqueue(ReoccuringJob j) {
+    std::lock_guard<std::mutex> lock(internal_mtx);
     auto id = id_counter.fetch_add(1);
     j.last_call = clock.now();
     reoccuring_jobs[id] = j;
@@ -56,10 +58,12 @@ void EvLoop::BlockOn(StatusLambda j, u32 id, std::chrono::milliseconds i) {
 }
 
 std::size_t EvLoop::StopReccuring(u32 id) {
+    std::lock_guard<std::mutex> lock(internal_mtx);
     return reoccuring_jobs.erase(id);
 }
 
 void EvLoop::Modify(u32 id, std::chrono::milliseconds i) {
+    std::lock_guard<std::mutex> lock(internal_mtx);
     reoccuring_jobs[id].interval = std::chrono::duration_cast<std::chrono::microseconds>(i);
     reoccuring_jobs[id].last_call = clock.now();
 }
