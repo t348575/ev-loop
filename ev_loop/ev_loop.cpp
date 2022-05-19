@@ -78,10 +78,12 @@ void EvLoop::Run() {
     while(!exit) {{
             std::lock_guard<std::mutex> lk(internal_mtx);
             for (auto &job: reoccuring_jobs) {
-                if (within(since(job.second.last_call), job.second.interval)) {
-                    internal_q.push(QOptions{Type::REOCCURING, job.second.j});
-                    job.second.last_call = clock.now();
-                }
+                try {
+                    if (within(since(job.second.last_call), job.second.interval)) {
+                        internal_q.push(QOptions{Type::REOCCURING, job.second.j});
+                        job.second.last_call = clock.now();
+                    }
+                } catch (std::exception &e) {}
             }
         }
 

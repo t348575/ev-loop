@@ -48,6 +48,8 @@ namespace ev {
             Job(JobSig func): func(func) {}
             void SetStore(Store *store_) { store = store_; }
             Store* GetStore() { return store; }
+            void SetContext(boost::any context_) { context = context_; }
+            boost::any GetContext() { return context; }
             void operator()() {
                 func(this);
             }
@@ -55,6 +57,7 @@ namespace ev {
             u32 id = 0;
             JobSig func;
             Store *store;
+            boost::any context;
     };
 
     struct QOptions {
