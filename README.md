@@ -1,4 +1,4 @@
-# ev-loop ![Visits](https://xn4nc029ta.execute-api.ap-south-1.amazonaws.com/default/repo-view-counter?repo=ev-loop)
+# ev-loop ![Visits](https://lambda.348575.xyz/repo-view-counter?repo=ev-loop)
 
 ## Lightweight, simple event loop in C++
 
